@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Options Trading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        .container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .container input[type="text"],
+        .container input[type="email"],
+        .container select,
+        .container input[type="number"],
+        .container button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .container button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+        .container button:hover {
+            background-color: #218838;
+        }
+        .bet-history {
+            margin-top: 20px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .bet-history div {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .admin-panel {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .admin-panel button {
+            background-color: #007bff;
+            margin: 5px 0;
+        }
+        .admin-panel button:hover {
+            background-color: #0056b3;
+        }
+        #placeUpButton {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        #placeDownButton {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        #placeUpButton:hover {
+            background-color: #218838;
+        }
+        #placeDownButton:hover {
+            background-color: #c82333;
+        }
+        #userProfile {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Binary Options Trading</h2>
+        
+        <input type="text" placeholder="Username" id="username">
+        <input type="email" placeholder="Email" id="email">
+        <button id="signInButton">Sign In</button>
+
+        <div id="userProfile" style="display:none;">
+            <p><strong>User:</strong> <span id="displayUsername"></span></p>
+            <p><strong>Email:</strong> <span id="displayEmail"></span></p>
+            <p><strong>Balance:</strong> ₹<span id="balance">80.00</span></p>
+        </div>
+
+        <label for="asset">Select Asset:</label>
+        <select id="asset">
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+            <option value="LTC">LTC</option>
+        </select>
+
+        <label for="timeframe">Select Timeframe:</label>
+        <select id="timeframe">
+            <option value="60">60 seconds</option>
+            <option value="120">120 seconds</option>
+            <option value="300">300 seconds</option>
+        </select>
+
+        <label for="betAmount">Bet Amount (₹):</label>
+        <input type="number" id="betAmount" placeholder="Enter amount">
+
+        <button id="placeUpButton">Place Bet (Up)</button>
+        <button id="placeDownButton">Place Bet (Down)</button>
+
+        <div class="bet-history" id="betHistory">
+            <!-- Bet history will be dynamically updated here -->
+        </div>
+
+        <div class="admin-panel">
+            <label for="depositAmount">Deposit ₹</label>
+            <input type="number" id="depositAmount" placeholder="Enter amount">
+            <button id="depositButton">Deposit</button>
+            
+            <label for="withdrawAmount">Withdraw ₹</label>
+            <input type="number" id="withdrawAmount" placeholder="Enter amount">
+            <button id="withdrawButton">Withdraw</button>
+
+            <button id="forceWinButton">Force Next Bet to Win</button>
+        </div>
+    </div>
+
+    <script>
+        let balance = 80.00;
+        let forceWin = false;
+
+        document.getElementById('signInButton').addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            if (username && email) {
+                document.getElementById('displayUsername').textContent = username;
+                document.getElementById('displayEmail').textContent = email;
+                document.getElementById('userProfile').style.display = 'block';
+            }
+        });
+
+        document.getElementById('placeUpButton').addEventListener('click', function() {
+            placeBet('Up');
+        });
+
+        document.getElementById('placeDownButton').addEventListener('click', function() {
+            placeBet('Down');
+        });
+
+        document.getElementById('depositButton').addEventListener('click', function() {
+            let depositAmount = parseFloat(document.getElementById('depositAmount').value);
+            balance += depositAmount;
+            updateBalance();
+        });
+
+        document.getElementById('withdrawButton').addEventListener('click', function() {
+            let withdrawAmount = parseFloat(document.getElementById('withdrawAmount').value);
+            if (withdrawAmount <= balance) {
+                balance -= withdrawAmount;
+                updateBalance();
+            } else {
+                alert('Insufficient balance!');
+            }
+        });
+
+        document.getElementById('forceWinButton').addEventListener('click', function() {
+            forceWin = true;
+        });
+
+        function placeBet(direction) {
+            let betAmount = parseFloat(document.getElementById('betAmount').value);
+            if (betAmount > balance) {
+                alert('Insufficient balance to place this bet!');
+                return;
+            }
+
+            balance -= betAmount;
+
+            let outcome = determineOutcome(direction);
+            let result = outcome ? 'Win' : 'Lose';
+
+            if (result === 'Win') {
+                balance += betAmount * 2; // Assuming 2x payout for simplicity
+            }
+
+            updateBalance();
+            updateBetHistory(direction, result, betAmount);
+        }
+
+        function determineOutcome(direction) {
+            if (forceWin) {
+                forceWin = false;
+                return true;
+            }
+
+            // Randomly decide if the bet wins or loses
+            return Math.random() > 0.5;
+        }
+
+        function updateBalance() {
+            document.getElementById('balance').textContent = balance.toFixed(2);
+        }
+
+        function updateBetHistory(direction, result, amount) {
+            let betHistory = document.getElementById('betHistory');
+            let newEntry = document.createElement('div');
+            newEntry.textContent = `BTC | 120s | ${direction} | ${result} ₹${amount.toFixed(2)} | ${new Date().toLocaleString()}`;
+            betHistory.prepend(newEntry);
+        }
+    </script>
+</body>
+</html>
